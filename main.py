@@ -26,7 +26,7 @@ def computeEzRo(vitrinitetble ,T, dt):
     return math.exp(-1.6 + 3.7 * Tr) / 100 , vitrinitetble
 
 
-def primarycracking(kerogen, alpha):
+def primarycracking(kerogen, alpha, user_data, top_fig_select):
 
     with _lock:
    
@@ -163,6 +163,11 @@ def primarycracking(kerogen, alpha):
         ax.plot(b, a, '-' , b , a, lw = 2, c='k')
         # ax.fill(x, y, zorder=10)
         ax.grid(True, zorder=5)
+        if user_data is not None:
+            try:
+                ax.scatter(user_data['TMAX'], user_data['HI'], c='r', s=50, marker='o')
+            except:
+                pass
 
         ax = plt.subplot(223)
         plt.xlabel('Thermal Stress (C)')
@@ -178,6 +183,11 @@ def primarycracking(kerogen, alpha):
         ax.plot(a, b, '-' , a , b, lw = 2, c='k')
         # ax.fill(x, y, zorder=10)
         ax.grid(True, zorder=5)
+        if user_data is not None:
+            try:
+                ax.scatter(user_data['STS'], user_data['TR'], c='r', s=50, marker='o')
+            except:
+                pass
 
         ax = plt.subplot(224)
         plt.xlabel('Thermal Stress (C)')
@@ -193,44 +203,77 @@ def primarycracking(kerogen, alpha):
         ax.plot(b, a, '-' , b , a, lw = 2, c='k')
         # ax.fill(x, y, zorder=10)
         ax.grid(True, zorder=5)
+        if user_data is not None:
+            try:
+                ax.scatter(user_data['STS'], user_data['TMAX'], c='r', s=50, marker='o')
+            except:
+                pass
+        
+        top_fig = plt.figure(figsize=(14,10))
+        ax = top_fig.add_subplot(111)
+        if top_fig_select == 'TR vs. STS':
+            ax.set_xlabel('Thermal Stress (C)')
+            ax.set_ylabel('Transformation ratio (/)')
+            ax.set_title('TR vs. Maturity')
+            xmin = 30
+            xmax = 180
+            ymin = 0
+            ymax = 1.1
+            ax.axis([xmin, xmax, ymin, ymax])
+            a = result[:,5]
+            b = result[:,2]
+            ax.plot(a, b, '-' , a , b, lw = 2, c='k')
+            # ax.fill(x, y, zorder=10)
+            ax.grid(True, zorder=5)
+            if user_data is not None:
+                try:
+                    ax.scatter(user_data['STS'], user_data['TR'], c='r', s=50, marker='o')
+                except:
+                    pass
+        elif top_fig_select == 'TMAX vs. STS':
+            ax.set_xlabel('Thermal Stress (C)')
+            ax.set_ylabel('TMAX (C)')
+            ax.set_title('TMAX vs. STS')
+            xmin = 30
+            xmax = 180
+            ymin = 390
+            ymax = 510
+            ax.axis([xmin, xmax, ymin, ymax])
+            a = result[:,4]
+            b = result[:,5]
+            ax.plot(b, a, '-' , b , a, lw = 2, c='k')
+            # ax.fill(x, y, zorder=10)
+            ax.grid(True, zorder=5)
+            if user_data is not None:
+                try:
+                    ax.scatter(user_data['STS'], user_data['TMAX'], c='r', s=50, marker='o')
+                except:
+                    pass
+        elif top_fig_select == 'HI vs. TMAX':
+            ax.set_xlabel('TMAX (C)')
+            ax.set_ylabel('Hydrogen Index (mgHC/gC)')
+            ax.set_title('HI vs. TMAX')
+            xmin = 390
+            xmax = 510
+            ymin = 0
+            ymax = 800
+            ax.axis([xmin, xmax, ymin, ymax])
+            a = result[:,1]
+            b = result[:,4]
 
-        # ax = plt.subplot(235)
-        # plt.xlabel('Maturity (EasyRo, %VRo eq.)')
-        # plt.ylabel('Temperature (C)')
-        # plt.title('Temperature vs. Maturity')
-        # xmin = 0.4
-        # xmax = 1.5
-        # ymin = 60.
-        # ymax = max(np.max(T2),np.max(T))
-        # plt.axis([xmin, xmax, ymin, ymax])
-        # a = 100 * result[:,3]
-        # b = result[:,0]
-        # c = result[:,5]
-        # ax.plot(a, b , label = 'Temperature')
-        # ax.plot(a, c , label = 'STS')
-        # # ax.fill(x, y, zorder=10)
-        # ax.grid(True, zorder=5)
-        # plt.legend()
+            ax.plot(b, a, '-' , b , a, lw = 2, c='k')
+            # ax.fill(x, y, zorder=10)
+            ax.grid(True, zorder=5)
+            if user_data is not None:
+                try:
+                    ax.scatter(user_data['TMAX'], user_data['HI'], c='r', s=50, marker='o')
+                except:
+                    pass
 
-        # ax = plt.subplot(236)
-        # plt.xlabel('Time (Ma)')
-        # plt.ylabel('Temperature (C)')
-        # plt.title('Heating rate ' + str(alpha) + 'C/Ma')
-        # xmin = 0.
-        # xmax = T / alpha
-        # ymin = 0.
-        # ymax = max(np.max(T2),np.max(T))
-        # plt.axis([xmin, xmax, ymin, ymax])
-        # a = result[:,6]
-        # b = result[:,0]
-        # c = result[:,5]
-        # ax.plot(a, b , label = 'Temperature')
-        # ax.plot(a, c , label = 'STS')
-        # # ax.fill(x, y, zorder=10)
-        # ax.grid(True, zorder=5)
-        # plt.legend()
 
-    return result_df, fig
+
+
+    return result_df, fig, top_fig
 
 
 
@@ -267,7 +310,7 @@ class KerogenPepper:
 
 #     return [{"type": "image", "data": {"alt": "could not compute", "src": "data:image/png;base64, " + encoded_string.decode('ascii')}}]
 
-def compute_cracking(OF, HI, alpha):
+def compute_cracking(OF, HI, alpha, user_data=None, top_fig_select='TR vs. STS'):
     '''
     Compute primary cracking for a given kerogen and heating rate
 
@@ -285,15 +328,20 @@ def compute_cracking(OF, HI, alpha):
     of_select = OF
     kero  = KerogenPepper(of_select['Name'] ,  of_select['A'] ,  of_select['E'] ,  of_select['s'] , float(HI))
     with _lock:
-        result_df, fig = primarycracking(kero , float(alpha))
+        result_df, fig, top_fig = primarycracking(kero , float(alpha), user_data, top_fig_select)
 
-    return result_df, fig
+    return result_df, fig, top_fig
 
 
 def st_ui():
     st.set_page_config(layout = "wide")
+    user_data = None
+    user_file = st.sidebar.file_uploader("Data upload (Excel format, columns: 'STS', 'TR', 'HI', 'TMAX', no specific order, no mandatory columns)")
+    if user_file is not None:
+        user_data = pd.read_excel(user_file)
+        user_data = user_data.fillna(-999)
 
-
+    top_fig_select = st.sidebar.selectbox('Top plot selection', ['TR vs. STS', 'HI vs. TMAX', 'TMAX vs. STS'])
     st.title("Primary Cracking simulation")
     OF = st.sidebar.selectbox('OrganoFacies selection', ('A', 'B', 'C', 'DE', 'F'))
     A = st.sidebar.text_input("Frequency factor A (1e13 s-1)", value = of_dict[OF]['A']/1e13)
@@ -304,10 +352,13 @@ def st_ui():
     alpha = st.sidebar.slider("Heating rate", 0.1, 10., 2.)
 
 
-    result_df, fig = compute_cracking(new_of, HI, alpha)
-
+    result_df, fig, top_fig = compute_cracking(new_of, HI, alpha, user_data, top_fig_select)
+    
+    st.header("Primary cracking dashboard")
     with _lock:
-        st.header("Primary cracking dashboard")
+        buf = BytesIO()
+        top_fig.savefig(buf, format="png", bbox_inches='tight', transparent = True)
+        st.image(buf, use_column_width=False, caption='Primary Cracking dashboard')
         buf = BytesIO()
         fig.savefig(buf, format="png", bbox_inches='tight', transparent = True)
         st.image(buf, use_column_width=False, caption='Primary Cracking dashboard')

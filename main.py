@@ -26,7 +26,7 @@ def computeEzRo(vitrinitetble ,T, dt):
     return math.exp(-1.6 + 3.7 * Tr) / 100 , vitrinitetble
 
 
-def primarycracking(kerogen, alpha, user_data, top_fig_select):
+def primarycracking(kerogen, alpha, user_data, top_fig_select, scalar_start, scalar_end):
 
     with _lock:
    
@@ -175,11 +175,12 @@ def primarycracking(kerogen, alpha, user_data, top_fig_select):
         plt.title('TR vs. Maturity')
         xmin = 30
         xmax = 180
-        ymin = 0
-        ymax = 1.1
+        ymin = max(scalar_start - 0.1, 0.0)
+        ymax = scalar_end + 0.1
         plt.axis([xmin, xmax, ymin, ymax])
+        y_values = result[:,2]*(scalar_end - scalar_start) + scalar_start
         a = result[:,5]
-        b = result[:,2]
+        b = y_values
         ax.plot(a, b, '-' , a , b, lw = 2, c='k')
         # ax.fill(x, y, zorder=10)
         ax.grid(True, zorder=5)
@@ -217,11 +218,12 @@ def primarycracking(kerogen, alpha, user_data, top_fig_select):
             ax.set_title('TR vs. Maturity')
             xmin = 30
             xmax = 180
-            ymin = 0
-            ymax = 1.1
+            ymin = max(scalar_start - 0.1, 0.0)
+            ymax = scalar_end + 0.1
             ax.axis([xmin, xmax, ymin, ymax])
+            y_values = result[:,2]*(scalar_end - scalar_start) + scalar_start
             a = result[:,5]
-            b = result[:,2]
+            b = y_values
             ax.plot(a, b, '-' , a , b, lw = 2, c='k')
             # ax.fill(x, y, zorder=10)
             ax.grid(True, zorder=5)
@@ -310,7 +312,7 @@ class KerogenPepper:
 
 #     return [{"type": "image", "data": {"alt": "could not compute", "src": "data:image/png;base64, " + encoded_string.decode('ascii')}}]
 
-def compute_cracking(OF, HI, alpha, user_data=None, top_fig_select='TR vs. STS'):
+def compute_cracking(OF, HI, alpha, user_data=None, top_fig_select='TR vs. STS', scalar_start=0, scalar_end=1):
     '''
     Compute primary cracking for a given kerogen and heating rate
 
@@ -328,7 +330,7 @@ def compute_cracking(OF, HI, alpha, user_data=None, top_fig_select='TR vs. STS')
     of_select = OF
     kero  = KerogenPepper(of_select['Name'] ,  of_select['A'] ,  of_select['E'] ,  of_select['s'] , float(HI))
     with _lock:
-        result_df, fig, top_fig = primarycracking(kero , float(alpha), user_data, top_fig_select)
+        result_df, fig, top_fig = primarycracking(kero , float(alpha), user_data, top_fig_select, scalar_start, scalar_end)
 
     return result_df, fig, top_fig
 
@@ -345,14 +347,16 @@ def st_ui():
     st.title("Primary Cracking simulation")
     OF = st.sidebar.selectbox('OrganoFacies selection', ('A', 'B', 'C', 'DE', 'F'))
     A = st.sidebar.text_input("Frequency factor A (1e13 s-1)", value = of_dict[OF]['A']/1e13)
-    E = st.sidebar.slider("Mean activation energy (kJ/mol)",min_value=30., max_value=70., value = round(of_dict[OF]['E'],2))
-    s = st.sidebar.slider("Standard deviation (kJ/mol)",min_value=0., max_value=5., value = of_dict[OF]['s'])
+    E = st.sidebar.text_input("Mean activation energy (kJ/mol)", value = round(of_dict[OF]['E'],2))
+    s = st.sidebar.text_input("Standard deviation (kJ/mol)", value = of_dict[OF]['s'])
+    scalar_start = st.sidebar.text_input("Reaction startpoint", value = 0.)
+    scalar_end = st.sidebar.text_input("Reaction endpoint", value = 1.)
     new_of = {'Name': "new_of", 'A': 1e13*float(A), 'E': float(E), 's': float(s)}
-    HI = st.sidebar.slider("Initial Hydrogen Index", 100, 900, 600)
+    HI = st.sidebar.text_input("Initial Hydrogen Index", value = 600)
     alpha = st.sidebar.slider("Heating rate", 0.1, 10., 2.)
 
 
-    result_df, fig, top_fig = compute_cracking(new_of, HI, alpha, user_data, top_fig_select)
+    result_df, fig, top_fig = compute_cracking(new_of, HI, alpha, user_data, top_fig_select, float(scalar_start), float(scalar_end))
     
     st.header("Primary cracking dashboard")
     with _lock:
